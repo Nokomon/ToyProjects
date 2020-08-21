@@ -1,0 +1,26 @@
+from selenium import webdriver
+from webdriver_manager.chrome import ChromeDriverManager
+
+
+element = driver.find_element_by_xpath('//*[@id="game-user-guest__XOrGbB9iag0ntErC3P3Y34Re4Re_t4jI"]/div[2]/div[2]')
+ID = element.text
+
+def auto():
+    while True:
+        current_player = driver.find_elements_by_class_name('game-user-current')
+        if len(current_player) == 0:
+            continue
+        target = current_player[0].find_elements_by_class_name('game-user-name')
+        if len(target) == 0:
+            continue
+        username = target[0].text
+        if len(current_player) > 0 and username == ID:
+            start=current_word()
+
+            if '(' in start:
+                start = start.split('(')[0]
+
+            if len(start) == 1:
+                attack(start)
+
+auto() # 실행
