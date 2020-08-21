@@ -1,0 +1,79 @@
+from selenium import webdriver
+from webdriver_manager.chrome import ChromeDriverManager
+
+import pandas as pd
+import random
+
+driver = webdriver.Chrome('C:\/chromedriver')
+driver.implicitly_wait(1)
+
+driver.get('http://100.27.12.40/?server=0#103')
+
+def current_word():
+    current_word = driver.find_elements_by_class_name('jjo-display')
+    return current_word[0].text
+    
+def send(text):
+    input_tag = driver.find_element_by_xpath('//*[@id="Talk"]')
+    input_tag.send_keys(text)
+    driver.find_element_by_xpath('//*[@id="ChatBtn"]').click()
+    
+df = pd.read_csv('kr_korean.csv', header=None, names=['단어', '품사'])
+
+# 전처리 과정
+
+# 1. 품사에서 '명사'만 남도록 처리
+pos_filter = df['품사'] == "명사"
+df = df[pos_filter]
+
+# 2. 뽑아낸 명사 중, 두 음절 이상으로 이루어진 단어들만 남겨놓는다.
+syllable_filter = df['단어'].apply(lambda x: len(x) >= 2)
+df = df[syllable_filter]
+
+# 3. 중복된 데이터 제거
+df = df.drop_duplicates()
+
+# 4. '단어'만 리스트로 따로 저장
+word_list = df['단어'].tolist()
+
+# 5. 간지나는 긴 단어들 코퍼스에 추가
+f = open('user_corpus.txt', 'r', encoding='utf-8-sig')
+lines = f.readlines()
+
+for line in lines:
+    if len(line) > 3:
+        word_list.append(line)
+
+f.close()
+
+def get(syllable):
+    text_list = []
+    for word in word_list:
+        if word.startswith(syllable):
+            if "-" in word:
+                continue
+            text_list.append(word)
+    text_list.sort(key=len, reverse=True)
+    return text_list
+
+def attack(syllable):
+    attack_list = get(syllable)
+    if len(attack_list) == 0:
+        print("사전에 등재되지 않은 단어입니다.")
+        return None
+    length = len(attack_list)
+    if length > 10:
+        length = 5
+    i = random.randrange(0, length)
+
+    message = attack_list[i]
+    print("단어를 전송합니다: {0}".format(message))
+    send(message)
+    
+syllable=current_word()
+
+if '(' in syllable:
+    syllable = syllable[-2]
+
+if len(syllable) == 1:
+    attack(syllable)
